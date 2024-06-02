@@ -136,4 +136,11 @@ const iterate = async (votesNumber) => {
 };
 
 
-iterate(2)
+import { CronJob } from 'cron';
+const job = new CronJob('48 20 * * *', function() {
+    iterate(2)
+    console.log('a')
+})
+job.start()
+
+// iterate(2)
