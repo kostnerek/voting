@@ -3,7 +3,26 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { configDotenv } from "dotenv";
 import cliProgress from 'cli-progress';
 import colors from 'ansi-colors';
+
+import formData from 'form-data';
+import Mailgun from 'mailgun.js';
+  
 configDotenv();
+
+
+const sendNotif = async (subject, text) => {
+  const mailgun = new Mailgun(formData);
+  const mg = mailgun.client({username: 'api', key: process.env.MG_API_KEY});
+
+    const mgMail = process.env.MG_MAIL;
+    mg.messages.create(mgMail, {
+        from: `AutoVoter <mailgun@${mgMail}>`,
+        to: process.env.MAIL_TO_NOTIFY.split(','),
+        subject,
+        text
+    })
+}
+
 
 const vote = async (ip, port, user, pass) => {
     puppeteer.use(StealthPlugin())
@@ -50,9 +69,27 @@ const vote = async (ip, port, user, pass) => {
         return false
     }
 }
-const iterate = async () => {
+
+const shuffle = (array) => {
+    let currentIndex = array.length;
+  
+    while (currentIndex != 0) {
+  
+      let randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+  
+      [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
+    return array;
+  }
+
+const iterate = async (votesNumber) => {
     let i = 0;
-    const proxy = process.env.PROXY.split(',');
+    sendNotif('FFC Bot', `Voting started, ${votesNumber} votes will be added.`)
+    let proxy = shuffle(process.env.PROXY.split(','))
+
+    proxy = proxy.slice(0, votesNumber)
     const max = proxy.length;
 
     const multibar = new cliProgress.MultiBar({
@@ -95,6 +132,8 @@ const iterate = async () => {
 
     multibar.stop();
     console.log(`Success: ${successCount}/${max}`);
+    sendNotif('FFC Bot', `Voting ended. Success: ${successCount}/${max}`)
 };
 
-iterate()
+
+iterate(2)
