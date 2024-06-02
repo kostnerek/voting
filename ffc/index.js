@@ -135,12 +135,4 @@ const iterate = async (votesNumber) => {
     sendNotif('FFC Bot', `Voting ended. Success: ${successCount}/${max}`)
 };
 
-
-import { CronJob } from 'cron';
-const job = new CronJob('48 20 * * *', function() {
-    iterate(2)
-    console.log('a')
-})
-job.start()
-
-// iterate(2)
+iterate(2)
