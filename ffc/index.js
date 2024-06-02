@@ -90,7 +90,7 @@ const iterate = async (votesNumber) => {
     let proxy = shuffle(process.env.PROXY.split(','))
 
     proxy = proxy.slice(0, votesNumber)
-    const max = proxy.length;
+    const max = process.env.NUM_OF_VOTES;
 
     const multibar = new cliProgress.MultiBar({
         clearOnComplete: false,
@@ -135,4 +135,4 @@ const iterate = async (votesNumber) => {
     sendNotif('FFC Bot', `Voting ended. Success: ${successCount}/${max}`)
 };
 
-iterate(2)
+iterate(process.env.NUM_OF_VOTES)
