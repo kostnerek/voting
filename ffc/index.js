@@ -10,6 +10,8 @@ import Mailgun from 'mailgun.js';
 configDotenv();
 
 
+
+
 const sendNotif = async (subject, text) => {
   const mailgun = new Mailgun(formData);
   const mg = mailgun.client({username: 'api', key: process.env.MG_API_KEY});
@@ -20,6 +22,25 @@ const sendNotif = async (subject, text) => {
         to: process.env.MAIL_TO_NOTIFY.split(','),
         subject,
         text
+    })
+}
+
+const validateEnv = () => {
+    const requiredEnv = [
+        'VOTE_URL',
+        'PROXY',
+        'NUM_OF_VOTES',
+        'MAIL_TO_NOTIFY',
+        'MG_API_KEY',
+        'MG_MAIL',
+        'HEADLESS'
+    ]
+
+    requiredEnv.forEach(env => {
+        if(!process.env[env]) {
+            sendNotif('FFC Bot', `Missing ${env} in .env file`)
+            throw new Error(`Missing ${env} in .env file`)
+        }
     })
 }
 
@@ -82,7 +103,7 @@ const shuffle = (array) => {
         array[randomIndex], array[currentIndex]];
     }
     return array;
-  }
+}
 
 const iterate = async (votesNumber) => {
     let i = 0;
@@ -135,4 +156,22 @@ const iterate = async (votesNumber) => {
     sendNotif('FFC Bot', `Voting ended. Success: ${successCount}/${max}`)
 };
 
-iterate(process.env.NUM_OF_VOTES)
+validateEnv()
+
+try {
+    iterate(process.env.NUM_OF_VOTES)
+}
+catch(e) {
+    console.error(e);
+    sendNotif('FFC Bot', `Error occured: ${e}`)
+}
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', reason.stack || reason)
+    sendNotif('FFC Bot', `Error occured: ${reason}`)
+})
+
+process.on('uncaughtException', function (err) {
+    console.log(err);
+    sendNotif('FFC Bot', `Error occured: ${err}`)
+});
