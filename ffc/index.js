@@ -13,6 +13,9 @@ configDotenv();
 
 
 const sendNotif = async (subject, text) => {
+  if(!process.env.MAIL_TO_NOTIFY) {
+    return
+  }
   const mailgun = new Mailgun(formData);
   const mg = mailgun.client({username: 'api', key: process.env.MG_API_KEY});
 
@@ -29,10 +32,6 @@ const validateEnv = () => {
     const requiredEnv = [
         'VOTE_URL',
         'PROXY',
-        'NUM_OF_VOTES',
-        'MAIL_TO_NOTIFY',
-        'MG_API_KEY',
-        'MG_MAIL',
         'HEADLESS'
     ]
 
@@ -111,7 +110,7 @@ const iterate = async (votesNumber) => {
     let proxy = shuffle(process.env.PROXY.split(','))
 
     proxy = proxy.slice(0, votesNumber)
-    const max = process.env.NUM_OF_VOTES;
+    const max = process.env.NUM_OF_VOTES??40;
 
     const multibar = new cliProgress.MultiBar({
         clearOnComplete: false,
@@ -159,7 +158,7 @@ const iterate = async (votesNumber) => {
 validateEnv()
 
 try {
-    iterate(process.env.NUM_OF_VOTES)
+    iterate(process.env.NUM_OF_VOTES ?? 40)
 }
 catch(e) {
     console.error(e);
