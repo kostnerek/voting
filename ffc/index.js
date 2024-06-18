@@ -26,6 +26,17 @@ const sleep = (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const msToTime = (s) => {
+    var ms = s % 1000;
+    s = (s - ms) / 1000;
+    var secs = s % 60;
+    s = (s - secs) / 60;
+    var mins = s % 60;
+    var hrs = (s - mins) / 60;
+  
+    return hrs + ':' + mins + ':' + secs + '.' + ms;
+  }
+
 const sendNotif = async (subject, text) => {
   if(!process.env.MAIL_TO_NOTIFY) {
     return
@@ -132,11 +143,11 @@ const iterate = async (votesNumber) => {
 
     proxy = proxy.slice(0, votesNumber)
     const max = process.env.NUM_OF_VOTES??40;
-
+    const timeToEnd = msToTime(process.env.TIMEFRAME)
     const multibar = new cliProgress.MultiBar({
         clearOnComplete: false,
         hideCursor: true,
-        format: `{name} |` + colors.blue('{bar}') + '| {percentage}% || {value}/{total} ETA: {eta_formatted}',
+        format: `${timeToEnd} > {name} |` + colors.blue('{bar}') + '| {percentage}% || {value}/{total} ETA: {eta_formatted}',
     }, cliProgress.Presets.shades_grey);
 
     const main = multibar.create(max, 0, {
@@ -150,7 +161,7 @@ const iterate = async (votesNumber) => {
     const error = multibar.create(max, 0, {
         name: 'Error   '
     });
-    const timeOffets = generateTimeOffsets(process.env.TIMEFRAME ?? 1000, 60, max)
+    const timeOffets = generateTimeOffsets(parseInt(process.env.TIMEFRAME) ?? 1000, 60, parseInt(max))
 
     let successCount = 0;
     while (i < max) {
@@ -158,7 +169,7 @@ const iterate = async (votesNumber) => {
         const proxyPort = proxy[i].split(':')[1];
         const proxyUser = proxy[i].split(':')[2];
         const proxyPass = proxy[i].split(':')[3];
-        const result = await vote(proxyIp, proxyPort, proxyUser, proxyPass);
+        const result = true//await vote(proxyIp, proxyPort, proxyUser, proxyPass);
         
         if (result) {
             successCount++;
@@ -169,11 +180,11 @@ const iterate = async (votesNumber) => {
         
         i++;
         main.increment();
+        console.log(timeOffets[i])
         await sleep(timeOffets[i]);
     }
 
     multibar.stop();
-    console.log(`Success: ${successCount}/${max}`);
     sendNotif('FFC Bot', `Voting ended. Success: ${successCount}/${max}`)
 };
 
