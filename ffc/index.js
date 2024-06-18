@@ -9,8 +9,22 @@ import Mailgun from 'mailgun.js';
   
 configDotenv();
 
-
-
+const shuffle = (array) => {
+    let currentIndex = array.length;
+  
+    while (currentIndex != 0) {
+  
+      let randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+  
+      [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
+    return array;
+}
+const sleep = (ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 const sendNotif = async (subject, text) => {
   if(!process.env.MAIL_TO_NOTIFY) {
@@ -43,6 +57,25 @@ const validateEnv = () => {
     })
 }
 
+function generateTimeOffsets(targetSum, percentageDiff, size) {
+    if (size <= 0) return []    
+    let baseValue = targetSum / size;
+    let array = Array(size).fill(baseValue);
+    
+    for (let i = 0; i < size; i++) {
+        if (i % 2 === 0) {
+            array[i] *= (1 + Math.random() * percentageDiff / 100);
+        } else {
+            array[i] *= (1 - Math.random() * percentageDiff / 100);
+        }
+    }
+    
+    let currentSum = array.reduce((acc, val) => acc + val, 0);
+    let correctionFactor = targetSum / currentSum;
+    array = array.map(x => Math.floor(x * correctionFactor));
+    
+    return array;
+}
 
 const vote = async (ip, port, user, pass) => {
     puppeteer.use(StealthPlugin())
@@ -64,16 +97,16 @@ const vote = async (ip, port, user, pass) => {
     })
     await page.goto(process.env.VOTE_URL);
 
-    const bandSelector = '#PDI_answer61765659'
+    const bandSelector = '#PDI_answer61897322'
     await page.waitForSelector(bandSelector)
     await page.click(bandSelector)
 
-    const voteSelector = '#pd-vote-button13848454'
+    const voteSelector = '#pd-vote-button13880680'
     await page.waitForSelector(voteSelector)
     await page.click(voteSelector)
 
 
-    const resultSelector = '#question-top-13848454'
+    const resultSelector = '#question-top-13880680'
     await page.waitForSelector(resultSelector)
 
     const result = await page.evaluate((resultSelector) => {
@@ -90,19 +123,7 @@ const vote = async (ip, port, user, pass) => {
     }
 }
 
-const shuffle = (array) => {
-    let currentIndex = array.length;
-  
-    while (currentIndex != 0) {
-  
-      let randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex--;
-  
-      [array[currentIndex], array[randomIndex]] = [
-        array[randomIndex], array[currentIndex]];
-    }
-    return array;
-}
+
 
 const iterate = async (votesNumber) => {
     let i = 0;
@@ -129,7 +150,7 @@ const iterate = async (votesNumber) => {
     const error = multibar.create(max, 0, {
         name: 'Error   '
     });
-
+    const timeOffets = generateTimeOffsets(process.env.TIMEFRAME ?? 1000, 60, max)
 
     let successCount = 0;
     while (i < max) {
@@ -138,16 +159,17 @@ const iterate = async (votesNumber) => {
         const proxyUser = proxy[i].split(':')[2];
         const proxyPass = proxy[i].split(':')[3];
         const result = await vote(proxyIp, proxyPort, proxyUser, proxyPass);
-
+        
         if (result) {
             successCount++;
             success.increment();
         } else {
             error.increment();
         }
-
+        
         i++;
         main.increment();
+        await sleep(timeOffets[i]);
     }
 
     multibar.stop();
