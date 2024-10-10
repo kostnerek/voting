@@ -35,7 +35,7 @@ const msToTime = (s) => {
     var hrs = (s - mins) / 60;
   
     return hrs + ':' + mins + ':' + secs + '.' + ms;
-  }
+}
 
 const sendNotif = async (subject, text) => {
   if(!process.env.MAIL_TO_NOTIFY) {
